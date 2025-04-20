@@ -1,0 +1,74 @@
+#Fashion MNIST Classification using HOG + SVM
+
+from tensorflow.keras.datasets import fashion_mnist
+import numpy as np
+import matplotlib.pyplot as plt
+from skimage.feature import hog
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
+from tqdm import tqdm
+
+# Class labels
+class_names = ['T-shirt/top', 'Trouser/pants', 'Pullover', 'Dress', 'Coat',
+               'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+
+# Load Fashion MNIST data
+(x_train, y_train), (x_test, y_test) = fashion_mnist.load_data()
+
+# Use smaller dataset
+x_train = x_train[:10000]
+y_train = y_train[:10000]
+x_test = x_test[:2000]
+y_test = y_test[:2000]
+
+# Visualize first 10 training images
+def plot_initial_images(images, labels, class_names):
+    fig, axes = plt.subplots(1, 10, figsize=(20, 3))
+    for i in range(10):
+        ax = axes[i]
+        ax.imshow(images[i], cmap='gray')
+        ax.set_title(class_names[labels[i]])
+        ax.axis('off')
+    plt.show()
+
+plot_initial_images(x_train, y_train, class_names)
+
+# Normalize
+x_train = x_train / 255.0
+x_test = x_test / 255.0
+
+# HOG Feature Extraction
+def extract_hog_features(images):
+    hog_features = []
+    for img in tqdm(images, desc="Extracting HOG"):
+        features = hog(img, pixels_per_cell=(4, 4), cells_per_block=(2, 2), visualize=False, channel_axis=None)
+        hog_features.append(features)
+    return np.array(hog_features)
+
+x_train_hog = extract_hog_features(x_train)
+x_test_hog = extract_hog_features(x_test)
+
+# SVM Classifier
+classifier = SVC(kernel='linear', random_state=0)
+classifier.fit(x_train_hog, y_train)
+
+# Accuracy
+train_acc = accuracy_score(y_train, classifier.predict(x_train_hog))
+test_acc = accuracy_score(y_test, classifier.predict(x_test_hog))
+print("Training Accuracy:", train_acc)
+print("Testing Accuracy:", test_acc)
+
+# Prediction & Visualization
+y_pred = classifier.predict(x_test_hog)
+
+def plot_output_images(images, true_labels, predicted_labels, class_names):
+    fig, axes = plt.subplots(1, 10, figsize=(20, 3))
+    for i in range(10):
+        ax = axes[i]
+        ax.imshow(images[i], cmap='gray')
+        ax.set_title(f"True: {class_names[true_labels[i]]}\nPred: {class_names[predicted_labels[i]]}", fontsize=10)
+        ax.axis('off')
+    plt.tight_layout()
+    plt.show()
+
+plot_output_images(x_test, y_test, y_pred, class_names)
