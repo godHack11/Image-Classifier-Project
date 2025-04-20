@@ -1,0 +1,58 @@
+"""Building a Chatbot with python or web Application """
+
+import pandas as pd
+import nltk
+from nltk.tokenize import word_tokenize
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+from dash import Dash, html, dcc, Input, Output
+import re
+
+nltk.download('punkt')
+
+data = pd.read_excel('training_dataset_updated.xlsx')
+
+def preprocess(text):
+    text = str(text).lower()
+    text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
+    tokens = word_tokenize(text)
+    return ' '.join(tokens)
+
+data['Concept'] = data['Concept'].apply(preprocess)
+
+vectorizer = TfidfVectorizer()
+X = vectorizer.fit_transform(data['Concept'])
+
+app = Dash(__name__)
+app.title = "AI Chatbot"
+
+app.layout = html.Div([
+    html.H1("AI Chatbot", style={'textAlign': 'center'}),
+    dcc.Input(id='user_input', type='text', placeholder='Ask me anything...', style={'width': '60%', 'padding': '10px'}),
+    html.Button('Ask', id='submit_btn', n_clicks=0, style={'marginLeft': '10px'}),
+    html.Div(id='bot_response', style={'marginTop': '20px', 'fontSize': '20px'})
+], style={'textAlign': 'center', 'fontFamily': 'Arial'})
+
+@app.callback(
+    Output('bot_response', 'children'),
+    [Input('submit_btn', 'n_clicks')],
+    [Input('user_input', 'value')]
+)
+def generate_response(n_clicks, user_input):
+    if not user_input:
+        return "Please enter a question."
+
+    user_input_clean = preprocess(user_input)
+    user_input_vector = vectorizer.transform([user_input_clean])
+    cosine_similarities = cosine_similarity(user_input_vector, X)
+    max_sim = cosine_similarities.max()
+
+    threshold = 0.3
+    if max_sim < threshold:
+        return " I'm not sure about that. Could you try rephrasing your question?"
+    else:
+        index = cosine_similarities.argmax()
+        return f" {data.iloc[index]['Answer']}"
+
+if __name__ == '__main__':
+    app.run(debug=True)
