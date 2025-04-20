@@ -1,0 +1,49 @@
+
+#HOG features
+import cv2
+import matplotlib.pyplot as plt
+from google.colab.patches import cv2_imshow
+from skimage.feature import hog
+
+# Upload image
+from google.colab import files
+uploaded = files.upload()
+
+# Use uploaded image file (replace 'your_image.jpg' with your actual file name)
+image_path = list(uploaded.keys())[0]
+image = cv2.imread(image_path)
+
+# 1. Display original image
+cv2_imshow(image)
+
+# 2. Convert to grayscale
+gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+cv2_imshow(gray_image)
+
+# 3. Resize image
+resized_image = cv2.resize(image, (100, 100))
+cv2_imshow(resized_image)
+
+# 4. Draw rectangle and circle on original image
+image_with_shapes = image.copy()
+cv2.rectangle(image_with_shapes, (50, 50), (150, 150), (255, 0, 0), 2)
+cv2.circle(image_with_shapes, (100, 100), 50, (0, 255, 0), 2)
+cv2_imshow(image_with_shapes)
+
+# 5. Apply Gaussian Blur
+blurred_image = cv2.GaussianBlur(image, (5, 5), 0)
+cv2_imshow(blurred_image)
+
+# 6. Apply Canny edge detection
+edges = cv2.Canny(gray_image, 100, 200)
+cv2_imshow(edges)
+
+# 7. Extract and Display HOG Features
+gray_for_hog = cv2.resize(gray_image, (128, 64))  # Resize for HOG
+features, hog_image = hog(gray_for_hog, pixels_per_cell=(8, 8),
+                          cells_per_block=(2, 2), visualize=True)
+
+plt.imshow(hog_image, cmap='gray')
+plt.title('HOG Features')
+plt.axis('off')
+plt.show()
